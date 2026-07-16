@@ -1,258 +1,384 @@
-const adminSteps = [
-  ['1', 'Criar o livro', 'Define título, idioma, nível, curso, turma e mantém o conteúdo como rascunho.'],
-  ['2', 'Enviar o PDF', 'O arquivo original é armazenado e enviado para a fila de processamento.'],
-  ['3', 'Processar páginas', 'O sistema converte o PDF em páginas, gera imagens e extrai o texto disponível.'],
-  ['4', 'Enviar os áudios', 'O administrador associa áudios ao livro, página, diálogo ou capítulo.'],
-  ['5', 'Transcrever com Whisper', 'O áudio é transcrito e separado em frases com timestamps para revisão.'],
-  ['6', 'Mapear interações', 'O administrador desenha áreas sobre a página e vincula cada trecho ao áudio correto.'],
-  ['7', 'Revisar e publicar', 'O livro é testado, vinculado aos usuários e liberado para acesso.'],
+import { useMemo, useState } from 'react';
+import {
+  Background,
+  Controls,
+  Handle,
+  MarkerType,
+  MiniMap,
+  Node,
+  NodeProps,
+  Position,
+  ReactFlow,
+  type Edge,
+} from '@xyflow/react';
+import '@xyflow/react/dist/style.css';
+
+type FlowKind = 'start' | 'process' | 'decision' | 'end';
+type FlowTone = 'admin' | 'system' | 'student' | 'teacher';
+
+type FlowNodeData = {
+  title: string;
+  description?: string;
+  kind: FlowKind;
+  tone: FlowTone;
+};
+
+type DiagramNode = Node<FlowNodeData, 'flowNode'>;
+type DiagramKey = 'overview' | 'admin' | 'student' | 'teacher';
+
+type Diagram = {
+  title: string;
+  subtitle: string;
+  nodes: DiagramNode[];
+  edges: Edge[];
+};
+
+const node = (
+  id: string,
+  x: number,
+  y: number,
+  title: string,
+  description: string,
+  kind: FlowKind = 'process',
+  tone: FlowTone = 'system',
+): DiagramNode => ({
+  id,
+  type: 'flowNode',
+  position: { x, y },
+  data: { title, description, kind, tone },
+});
+
+const edge = (
+  id: string,
+  source: string,
+  target: string,
+  label?: string,
+  sourceHandle = 'bottom',
+  targetHandle = 'top',
+): Edge => ({
+  id,
+  source,
+  target,
+  sourceHandle,
+  targetHandle,
+  label,
+  type: 'smoothstep',
+  markerEnd: { type: MarkerType.ArrowClosed, width: 18, height: 18 },
+  style: { strokeWidth: 2, stroke: '#64748b' },
+  labelStyle: { fill: '#334155', fontWeight: 800, fontSize: 12 },
+  labelBgStyle: { fill: '#ffffff', fillOpacity: 0.95 },
+  labelBgPadding: [7, 4],
+  labelBgBorderRadius: 6,
+});
+
+const overviewDiagram: Diagram = {
+  title: 'Visão geral do Livro Interativo',
+  subtitle: 'Fluxo completo entre administrador, processamento interno, aluno e acompanhamento pedagógico.',
+  nodes: [
+    node('o-start', 390, 10, 'Início', 'Administrador acessa o painel.', 'start', 'admin'),
+    node('o-create', 390, 140, 'Cadastrar livro', 'Título, idioma, nível, curso e público.', 'process', 'admin'),
+    node('o-upload', 390, 280, 'Enviar PDF e áudios', 'Arquivos são validados e enviados ao storage.', 'process', 'admin'),
+    node('o-process', 390, 420, 'Processar conteúdo', 'PDF vira páginas e o Whisper transcreve os áudios.', 'process', 'system'),
+    node('o-ok', 390, 570, 'Processamento concluído?', 'Valida páginas, textos, áudios e timestamps.', 'decision', 'system'),
+    node('o-error', 720, 570, 'Corrigir e reprocessar', 'Exibe o erro e permite substituir arquivos.', 'process', 'admin'),
+    node('o-map', 390, 760, 'Mapear interações', 'Admin liga frases e regiões aos áudios.', 'process', 'admin'),
+    node('o-approved', 390, 910, 'Livro aprovado?', 'Revisão visual e teste de todos os trechos.', 'decision', 'admin'),
+    node('o-review', 720, 910, 'Revisar conteúdo', 'Corrige áreas, áudio, texto ou configuração.', 'process', 'admin'),
+    node('o-publish', 390, 1100, 'Publicar livro', 'Liberação por aluno, turma, curso ou geral.', 'process', 'admin'),
+    node('o-library', 390, 1240, 'Aluno acessa a biblioteca', 'Visualiza somente os livros liberados.', 'process', 'student'),
+    node('o-interact', 390, 1380, 'Ler e interagir', 'Navega, toca frases e ouve os áudios.', 'process', 'student'),
+    node('o-progress', 390, 1520, 'Salvar progresso', 'Página atual, percentual e interações.', 'process', 'system'),
+    node('o-report', 720, 1520, 'Acompanhar resultados', 'Professor consulta progresso e engajamento.', 'process', 'teacher'),
+    node('o-end', 390, 1680, 'Fim', 'Livro disponível e acompanhado.', 'end', 'student'),
+  ],
+  edges: [
+    edge('oe1', 'o-start', 'o-create'),
+    edge('oe2', 'o-create', 'o-upload'),
+    edge('oe3', 'o-upload', 'o-process'),
+    edge('oe4', 'o-process', 'o-ok'),
+    edge('oe5', 'o-ok', 'o-map', 'Sim'),
+    edge('oe6', 'o-ok', 'o-error', 'Não', 'right', 'left'),
+    edge('oe7', 'o-error', 'o-upload', 'Reenviar', 'left', 'right'),
+    edge('oe8', 'o-map', 'o-approved'),
+    edge('oe9', 'o-approved', 'o-publish', 'Sim'),
+    edge('oe10', 'o-approved', 'o-review', 'Não', 'right', 'left'),
+    edge('oe11', 'o-review', 'o-map', 'Corrigir', 'left', 'right'),
+    edge('oe12', 'o-publish', 'o-library'),
+    edge('oe13', 'o-library', 'o-interact'),
+    edge('oe14', 'o-interact', 'o-progress'),
+    edge('oe15', 'o-progress', 'o-report', 'Dados', 'right', 'left'),
+    edge('oe16', 'o-progress', 'o-end'),
+  ],
+};
+
+const adminDiagram: Diagram = {
+  title: 'Fluxo do administrador',
+  subtitle: 'Do cadastro inicial até a publicação do livro para os alunos.',
+  nodes: [
+    node('a-start', 380, 10, 'Início', 'Admin entra em Livros Interativos.', 'start', 'admin'),
+    node('a-create', 380, 140, 'Criar novo livro', 'Informa título, idioma, nível, curso e descrição.', 'process', 'admin'),
+    node('a-valid', 380, 290, 'Dados válidos?', 'Verifica campos obrigatórios e permissões.', 'decision', 'admin'),
+    node('a-fix', 700, 290, 'Corrigir cadastro', 'Destaca os campos inválidos.', 'process', 'admin'),
+    node('a-pdf', 380, 480, 'Enviar PDF', 'Valida formato, tamanho e integridade.', 'process', 'admin'),
+    node('a-pdfvalid', 380, 630, 'PDF aceito?', 'O arquivo pode ser processado?', 'decision', 'system'),
+    node('a-replace', 700, 630, 'Substituir arquivo', 'Admin envia outro PDF.', 'process', 'admin'),
+    node('a-processpdf', 380, 820, 'Gerar páginas', 'Worker converte páginas e cria previews.', 'process', 'system'),
+    node('a-audio', 380, 960, 'Enviar áudios', 'Áudio por frase, página, diálogo ou capítulo.', 'process', 'admin'),
+    node('a-whisper', 380, 1100, 'Transcrever áudio', 'Whisper retorna texto e timestamps.', 'process', 'system'),
+    node('a-map', 380, 1240, 'Mapear áreas interativas', 'Liga trechos da página aos segmentos de áudio.', 'process', 'admin'),
+    node('a-preview', 380, 1380, 'Visualizar prévia', 'Testa navegação, hover, toque e reprodução.', 'process', 'admin'),
+    node('a-approved', 380, 1530, 'Tudo correto?', 'Revisão final antes da publicação.', 'decision', 'admin'),
+    node('a-review', 700, 1530, 'Editar conteúdo', 'Retorna ao mapeamento e corrige.', 'process', 'admin'),
+    node('a-assign', 380, 1720, 'Definir público', 'Aluno, turma, curso ou acesso global.', 'process', 'admin'),
+    node('a-publish', 380, 1860, 'Publicar', 'O livro fica disponível na biblioteca.', 'process', 'admin'),
+    node('a-end', 380, 2000, 'Concluído', 'Livro publicado com sucesso.', 'end', 'admin'),
+  ],
+  edges: [
+    edge('ae1', 'a-start', 'a-create'),
+    edge('ae2', 'a-create', 'a-valid'),
+    edge('ae3', 'a-valid', 'a-pdf', 'Sim'),
+    edge('ae4', 'a-valid', 'a-fix', 'Não', 'right', 'left'),
+    edge('ae5', 'a-fix', 'a-create', 'Corrigir', 'left', 'right'),
+    edge('ae6', 'a-pdf', 'a-pdfvalid'),
+    edge('ae7', 'a-pdfvalid', 'a-processpdf', 'Sim'),
+    edge('ae8', 'a-pdfvalid', 'a-replace', 'Não', 'right', 'left'),
+    edge('ae9', 'a-replace', 'a-pdf', 'Reenviar', 'left', 'right'),
+    edge('ae10', 'a-processpdf', 'a-audio'),
+    edge('ae11', 'a-audio', 'a-whisper'),
+    edge('ae12', 'a-whisper', 'a-map'),
+    edge('ae13', 'a-map', 'a-preview'),
+    edge('ae14', 'a-preview', 'a-approved'),
+    edge('ae15', 'a-approved', 'a-assign', 'Sim'),
+    edge('ae16', 'a-approved', 'a-review', 'Não', 'right', 'left'),
+    edge('ae17', 'a-review', 'a-map', 'Revisar', 'left', 'right'),
+    edge('ae18', 'a-assign', 'a-publish'),
+    edge('ae19', 'a-publish', 'a-end'),
+  ],
+};
+
+const studentDiagram: Diagram = {
+  title: 'Fluxo do aluno',
+  subtitle: 'Acesso ao livro, interação com frases, reprodução de áudio e progresso automático.',
+  nodes: [
+    node('s-start', 380, 10, 'Início', 'Aluno entra na plataforma.', 'start', 'student'),
+    node('s-login', 380, 140, 'Autenticar', 'Sistema identifica aluno, curso e turma.', 'process', 'student'),
+    node('s-access', 380, 290, 'Possui livros liberados?', 'Consulta as regras de acesso.', 'decision', 'system'),
+    node('s-empty', 700, 290, 'Biblioteca vazia', 'Exibe mensagem de que não há livros.', 'end', 'student'),
+    node('s-library', 380, 480, 'Abrir biblioteca', 'Lista livros disponíveis e progresso.', 'process', 'student'),
+    node('s-book', 380, 620, 'Selecionar livro', 'Aluno escolhe o conteúdo desejado.', 'process', 'student'),
+    node('s-progress', 380, 770, 'Existe progresso salvo?', 'Verifica a última página acessada.', 'decision', 'system'),
+    node('s-resume', 700, 770, 'Retomar leitura', 'Abre na última página visualizada.', 'process', 'student'),
+    node('s-first', 380, 960, 'Abrir primeira página', 'Carrega o início do livro.', 'process', 'student'),
+    node('s-page', 380, 1100, 'Visualizar página', 'Renderiza imagem, texto e áreas interativas.', 'process', 'student'),
+    node('s-interactive', 380, 1250, 'Trecho interativo?', 'Detecta clique, toque ou hover.', 'decision', 'student'),
+    node('s-next', 700, 1250, 'Navegar pela página', 'Aluno pode avançar ou voltar.', 'process', 'student'),
+    node('s-play', 380, 1440, 'Reproduzir áudio', 'Toca o arquivo ou intervalo por timestamp.', 'process', 'student'),
+    node('s-save', 380, 1580, 'Salvar interação', 'Registra página, trecho e último acesso.', 'process', 'system'),
+    node('s-last', 380, 1730, 'Última página?', 'Verifica se o livro foi concluído.', 'decision', 'system'),
+    node('s-continue', 700, 1730, 'Próxima página', 'Atualiza a navegação e continua.', 'process', 'student'),
+    node('s-complete', 380, 1920, 'Marcar como concluído', 'Salva 100% e data de conclusão.', 'process', 'system'),
+    node('s-end', 380, 2060, 'Fim', 'Aluno concluiu o livro.', 'end', 'student'),
+  ],
+  edges: [
+    edge('se1', 's-start', 's-login'),
+    edge('se2', 's-login', 's-access'),
+    edge('se3', 's-access', 's-library', 'Sim'),
+    edge('se4', 's-access', 's-empty', 'Não', 'right', 'left'),
+    edge('se5', 's-library', 's-book'),
+    edge('se6', 's-book', 's-progress'),
+    edge('se7', 's-progress', 's-first', 'Não'),
+    edge('se8', 's-progress', 's-resume', 'Sim', 'right', 'left'),
+    edge('se9', 's-resume', 's-page', undefined, 'left', 'right'),
+    edge('se10', 's-first', 's-page'),
+    edge('se11', 's-page', 's-interactive'),
+    edge('se12', 's-interactive', 's-play', 'Sim'),
+    edge('se13', 's-interactive', 's-next', 'Não', 'right', 'left'),
+    edge('se14', 's-next', 's-page', 'Continuar', 'left', 'right'),
+    edge('se15', 's-play', 's-save'),
+    edge('se16', 's-save', 's-last'),
+    edge('se17', 's-last', 's-complete', 'Sim'),
+    edge('se18', 's-last', 's-continue', 'Não', 'right', 'left'),
+    edge('se19', 's-continue', 's-page', undefined, 'left', 'right'),
+    edge('se20', 's-complete', 's-end'),
+  ],
+};
+
+const teacherDiagram: Diagram = {
+  title: 'Fluxo do professor e coordenação',
+  subtitle: 'Consulta de acesso, progresso e utilização dos recursos interativos.',
+  nodes: [
+    node('t-start', 380, 10, 'Início', 'Professor entra na plataforma.', 'start', 'teacher'),
+    node('t-login', 380, 140, 'Autenticar', 'Sistema verifica o perfil e permissões.', 'process', 'teacher'),
+    node('t-authorized', 380, 290, 'Possui permissão?', 'Valida acesso à turma ou ao curso.', 'decision', 'system'),
+    node('t-denied', 700, 290, 'Acesso negado', 'Exibe mensagem e encerra o fluxo.', 'end', 'teacher'),
+    node('t-dashboard', 380, 480, 'Abrir acompanhamento', 'Painel apresenta livros e turmas.', 'process', 'teacher'),
+    node('t-filter', 380, 620, 'Selecionar filtros', 'Curso, turma, livro, aluno e período.', 'process', 'teacher'),
+    node('t-data', 380, 770, 'Existem dados?', 'Verifica acessos e progressos registrados.', 'decision', 'system'),
+    node('t-empty', 700, 770, 'Sem registros', 'Exibe estado vazio e permite trocar filtros.', 'process', 'teacher'),
+    node('t-metrics', 380, 960, 'Visualizar métricas', 'Percentual, página atual e último acesso.', 'process', 'teacher'),
+    node('t-detail', 380, 1100, 'Abrir detalhes do aluno', 'Mostra interações e áudios reproduzidos.', 'process', 'teacher'),
+    node('t-export', 380, 1250, 'Deseja exportar?', 'Relatório opcional para acompanhamento.', 'decision', 'teacher'),
+    node('t-report', 700, 1250, 'Gerar relatório', 'Exporta os dados filtrados.', 'process', 'teacher'),
+    node('t-end', 380, 1440, 'Fim', 'Consulta finalizada.', 'end', 'teacher'),
+  ],
+  edges: [
+    edge('te1', 't-start', 't-login'),
+    edge('te2', 't-login', 't-authorized'),
+    edge('te3', 't-authorized', 't-dashboard', 'Sim'),
+    edge('te4', 't-authorized', 't-denied', 'Não', 'right', 'left'),
+    edge('te5', 't-dashboard', 't-filter'),
+    edge('te6', 't-filter', 't-data'),
+    edge('te7', 't-data', 't-metrics', 'Sim'),
+    edge('te8', 't-data', 't-empty', 'Não', 'right', 'left'),
+    edge('te9', 't-empty', 't-filter', 'Trocar filtros', 'left', 'right'),
+    edge('te10', 't-metrics', 't-detail'),
+    edge('te11', 't-detail', 't-export'),
+    edge('te12', 't-export', 't-end', 'Não'),
+    edge('te13', 't-export', 't-report', 'Sim', 'right', 'left'),
+    edge('te14', 't-report', 't-end', undefined, 'left', 'right'),
+  ],
+};
+
+const diagrams: Record<DiagramKey, Diagram> = {
+  overview: overviewDiagram,
+  admin: adminDiagram,
+  student: studentDiagram,
+  teacher: teacherDiagram,
+};
+
+const tabs: Array<{ key: DiagramKey; label: string; description: string }> = [
+  { key: 'overview', label: 'Visão geral', description: 'Fluxo integrado' },
+  { key: 'admin', label: 'Administrador', description: 'Cadastro e publicação' },
+  { key: 'student', label: 'Aluno', description: 'Leitura e interação' },
+  { key: 'teacher', label: 'Professor', description: 'Acompanhamento' },
 ];
 
-const studentSteps = [
-  ['1', 'Acessar a biblioteca', 'O aluno visualiza apenas os livros liberados para seu curso, turma ou usuário.'],
-  ['2', 'Abrir o livro', 'O sistema recupera a última página acessada e carrega o conteúdo progressivamente.'],
-  ['3', 'Interagir com a página', 'No desktop, o trecho pode ser destacado por hover. No mobile, a interação ocorre por toque.'],
-  ['4', 'Ouvir o conteúdo', 'Ao clicar no play, o sistema reproduz o arquivo inteiro ou apenas o intervalo indicado pelos timestamps.'],
-  ['5', 'Continuar a leitura', 'O aluno navega entre páginas, controla o áudio e retoma o livro de onde parou.'],
-  ['6', 'Salvar o progresso', 'O sistema registra página atual, percentual concluído, último acesso e interações relevantes.'],
-];
+function FlowNode({ data }: NodeProps<DiagramNode>) {
+  const isDecision = data.kind === 'decision';
 
-const architecture = [
-  ['Frontend', 'React, TypeScript, React Router, TanStack Query, React Hook Form, Zod e PDF.js.'],
-  ['Backend', 'Node.js com TypeScript, Express ou Fastify, validação com Zod e serviços separados por domínio.'],
-  ['Banco', 'MySQL 8 com Prisma ORM, migrations e relações entre livros, páginas, áudios, segmentos e progresso.'],
-  ['Processamento', 'BullMQ e Redis para filas; FFmpeg para áudio; PDF.js, Poppler, pdf-lib e Sharp para documentos.'],
-  ['IA e áudio', 'Whisper para transcrição e timestamps. TTS somente se for necessário gerar voz a partir do texto.'],
-  ['Arquivos', 'Cloudflare R2, S3 ou storage compatível para PDFs, imagens, áudios e thumbnails.'],
-];
-
-const tables = [
-  ['student_books', 'Dados principais, vínculo com curso, status e publicação.'],
-  ['student_book_files', 'PDF original, imagens, áudios, thumbnails e caminhos no storage.'],
-  ['student_book_pages', 'Número, imagem renderizada, texto extraído, largura e altura.'],
-  ['student_book_audios', 'Arquivo de áudio, duração, modelo Whisper e estado do processamento.'],
-  ['student_book_audio_segments', 'Texto transcrito, ordem e timestamps de início e fim.'],
-  ['student_book_interactive_segments', 'Área clicável da página, tipo de interação e áudio relacionado.'],
-  ['student_book_assignments', 'Liberação por aluno, turma, curso ou acesso global.'],
-  ['student_book_progress', 'Página atual, percentual, status e último acesso do aluno.'],
-  ['student_book_interaction_logs', 'Eventos de leitura, cliques, reprodução de áudio e conclusão.'],
-  ['student_book_processing_jobs', 'Fila, status, entrada, saída e erros de cada processamento.'],
-];
-
-function FlowStep({ index, title, description }: { index: string; title: string; description: string }) {
   return (
-    <article className="flow-step">
-      <div className="step-number">{index}</div>
-      <div>
-        <h3>{title}</h3>
-        <p>{description}</p>
-      </div>
-    </article>
+    <div className={`flow-node flow-node--${data.kind} flow-node--${data.tone}`}>
+      <Handle type="target" position={Position.Top} id="top" className="flow-handle" />
+      <Handle type="target" position={Position.Left} id="left" className="flow-handle" />
+
+      {isDecision ? (
+        <div className="decision-shape">
+          <div className="decision-content">
+            <strong>{data.title}</strong>
+            <span>{data.description}</span>
+          </div>
+        </div>
+      ) : (
+        <div className="node-content">
+          <strong>{data.title}</strong>
+          <span>{data.description}</span>
+        </div>
+      )}
+
+      <Handle type="source" position={Position.Bottom} id="bottom" className="flow-handle" />
+      <Handle type="source" position={Position.Right} id="right" className="flow-handle" />
+    </div>
   );
 }
 
 function App() {
-  return (
-    <div className="app-shell">
-      <header className="hero" id="inicio">
-        <nav className="nav container">
-          <a className="brand" href="#inicio">Livro Interativo</a>
-          <div className="nav-links">
-            <a href="#fluxos">Fluxos</a>
-            <a href="#arquitetura">Arquitetura</a>
-            <a href="#banco">Banco</a>
-            <a href="#cronograma">Cronograma</a>
-          </div>
-        </nav>
+  const [activeDiagram, setActiveDiagram] = useState<DiagramKey>('overview');
+  const current = diagrams[activeDiagram];
+  const nodeTypes = useMemo(() => ({ flowNode: FlowNode }), []);
 
-        <div className="hero-content container">
-          <div className="eyebrow">Discovery técnico</div>
-          <h1>Fluxograma do Livro do Aluno Interativo</h1>
-          <p className="hero-copy">
-            Visão ponta a ponta do cadastro administrativo, processamento do PDF e áudio,
-            publicação, leitura do aluno e armazenamento de progresso.
+  return (
+    <main className="page-shell">
+      <header className="page-header">
+        <div>
+          <span className="eyebrow">Livro do Aluno Interativo</span>
+          <h1>Fluxograma funcional por usuário</h1>
+          <p>
+            Visualização das decisões, etapas e retornos existentes nos fluxos do administrador,
+            aluno, professor e processamento interno do sistema.
           </p>
-          <div className="hero-actions">
-            <a className="button primary" href="#fluxos">Ver fluxograma</a>
-            <a className="button ghost" href="#arquitetura">Ver tecnologias</a>
-          </div>
-          <div className="hero-metrics">
-            <div><strong>3</strong><span>perfis de uso</span></div>
-            <div><strong>10</strong><span>tabelas principais</span></div>
-            <div><strong>1</strong><span>fluxo integrado</span></div>
-          </div>
         </div>
+        <div className="header-badge">React + TypeScript</div>
       </header>
 
-      <main>
-        <section className="section container" id="visao-geral">
-          <div className="section-heading">
-            <span>Visão geral</span>
-            <h2>Como o projeto funciona</h2>
-            <p>O conteúdo nasce no painel administrativo, passa por processamento assíncrono e chega ao aluno como uma experiência interativa.</p>
-          </div>
-
-          <div className="overview-grid">
-            <article className="overview-card admin-card">
-              <div className="icon">A</div>
-              <h3>Administração</h3>
-              <p>Cadastro, upload, revisão, associação de áudio e publicação do livro.</p>
-            </article>
-            <div className="connector">→</div>
-            <article className="overview-card system-card">
-              <div className="icon">S</div>
-              <h3>Processamento</h3>
-              <p>Conversão do PDF, transcrição do áudio, geração de páginas e persistência.</p>
-            </article>
-            <div className="connector">→</div>
-            <article className="overview-card student-card">
-              <div className="icon">E</div>
-              <h3>Experiência do aluno</h3>
-              <p>Leitura, destaque de trechos, reprodução de áudio e progresso automático.</p>
-            </article>
-          </div>
-        </section>
-
-        <section className="section dark-section" id="fluxos">
-          <div className="container">
-            <div className="section-heading light">
-              <span>Fluxos de usuário</span>
-              <h2>Etapas por perfil</h2>
-              <p>Cada perfil interage com uma parte específica do ciclo de vida do livro.</p>
-            </div>
-
-            <div className="flow-columns">
-              <div className="flow-panel">
-                <div className="panel-label admin-label">Fluxo do administrador</div>
-                <div className="flow-list">
-                  {adminSteps.map(([index, title, description]) => (
-                    <FlowStep key={index} index={index} title={title} description={description} />
-                  ))}
-                </div>
-              </div>
-
-              <div className="flow-panel">
-                <div className="panel-label student-label">Fluxo do aluno</div>
-                <div className="flow-list">
-                  {studentSteps.map(([index, title, description]) => (
-                    <FlowStep key={index} index={index} title={title} description={description} />
-                  ))}
-                </div>
-              </div>
-            </div>
-
-            <div className="teacher-flow">
-              <div>
-                <span className="teacher-tag">Professor ou coordenação</span>
-                <h3>Acompanhamento pedagógico</h3>
-              </div>
-              <p>Consulta acesso, página atual, percentual de conclusão e uso dos recursos de áudio por turma ou aluno.</p>
-            </div>
-          </div>
-        </section>
-
-        <section className="section container" id="arquitetura">
-          <div className="section-heading">
-            <span>Arquitetura</span>
-            <h2>Tecnologias recomendadas</h2>
-            <p>Uma stack tipada, modular e preparada para tarefas de processamento que não devem bloquear a API.</p>
-          </div>
-
-          <div className="architecture-grid">
-            {architecture.map(([title, description]) => (
-              <article className="tech-card" key={title}>
-                <div className="tech-dot" />
-                <h3>{title}</h3>
-                <p>{description}</p>
-              </article>
-            ))}
-          </div>
-
-          <div className="pipeline">
-            <h3>Pipeline de processamento</h3>
-            <div className="pipeline-row">
-              {['Upload', 'Storage', 'Fila', 'Worker', 'Banco', 'Publicação'].map((item, index) => (
-                <div className="pipeline-item" key={item}>
-                  <span>{index + 1}</span>
-                  <strong>{item}</strong>
-                </div>
-              ))}
-            </div>
-          </div>
-        </section>
-
-        <section className="section soft-section" id="banco">
-          <div className="container">
-            <div className="section-heading">
-              <span>Persistência</span>
-              <h2>Estrutura de banco</h2>
-              <p>Separação por responsabilidade para reduzir acoplamento e permitir evolução do produto.</p>
-            </div>
-
-            <div className="table-grid">
-              {tables.map(([name, description]) => (
-                <article className="db-card" key={name}>
-                  <code>{name}</code>
-                  <p>{description}</p>
-                </article>
-              ))}
-            </div>
-          </div>
-        </section>
-
-        <section className="section container" id="regras">
-          <div className="section-heading">
-            <span>Regras técnicas</span>
-            <h2>Decisões importantes</h2>
-          </div>
-
-          <div className="decision-grid">
-            <article>
-              <h3>Whisper</h3>
-              <p>É usado para transcrever o áudio e localizar frases por timestamps. Não gera áudio.</p>
-            </article>
-            <article>
-              <h3>Interação responsiva</h3>
-              <p>Hover pode existir no desktop, mas a ação principal deve funcionar por clique ou toque.</p>
-            </article>
-            <article>
-              <h3>Processamento assíncrono</h3>
-              <p>PDF e áudio devem ser processados por workers, com status e mensagens de erro persistidos.</p>
-            </article>
-            <article>
-              <h3>Primeira versão</h3>
-              <p>O mapeamento manual ou semiautomático reduz dependência de extração perfeita e evita retrabalho.</p>
-            </article>
-          </div>
-        </section>
-
-        <section className="section timeline-section" id="cronograma">
-          <div className="container">
-            <div className="section-heading light">
-              <span>Cronograma</span>
-              <h2>Da descoberta à entrega</h2>
-            </div>
-            <div className="timeline">
-              <article><span>Agora</span><h3>Discovery</h3><p>Pesquisa, arquitetura, tecnologias, banco e fluxos.</p></article>
-              <article><span>Sexta, 14:30</span><h3>Revisão técnica</h3><p>Apresentação ao Durval e equipe para validação.</p></article>
-              <article><span>Sexta, 16:00</span><h3>Documento final</h3><p>Aplicação dos ajustes e entrega do Discovery.</p></article>
-              <article><span>Segunda-feira</span><h3>Desenvolvimento</h3><p>Início da feature em branch separada.</p></article>
-              <article><span>Fim do mês</span><h3>Entrega</h3><p>Livro Interativo funcional e disponível na plataforma.</p></article>
-            </div>
-          </div>
-        </section>
-      </main>
-
-      <footer>
-        <div className="container footer-content">
-          <div>
-            <strong>Livro do Aluno Interativo</strong>
-            <p>Fluxograma técnico e funcional.</p>
-          </div>
-          <a href="#inicio">Voltar ao topo ↑</a>
+      <section className="diagram-section">
+        <div className="diagram-tabs" role="tablist" aria-label="Selecionar fluxograma">
+          {tabs.map((tab) => (
+            <button
+              key={tab.key}
+              type="button"
+              className={activeDiagram === tab.key ? 'diagram-tab is-active' : 'diagram-tab'}
+              onClick={() => setActiveDiagram(tab.key)}
+            >
+              <strong>{tab.label}</strong>
+              <span>{tab.description}</span>
+            </button>
+          ))}
         </div>
-      </footer>
-    </div>
+
+        <div className="diagram-card">
+          <div className="diagram-card__header">
+            <div>
+              <span>Fluxograma selecionado</span>
+              <h2>{current.title}</h2>
+              <p>{current.subtitle}</p>
+            </div>
+            <div className="diagram-help">Arraste, use o zoom ou clique nos controles</div>
+          </div>
+
+          <div className="diagram-canvas">
+            <ReactFlow
+              key={activeDiagram}
+              nodes={current.nodes}
+              edges={current.edges}
+              nodeTypes={nodeTypes}
+              fitView
+              fitViewOptions={{ padding: 0.12, maxZoom: 0.78 }}
+              minZoom={0.22}
+              maxZoom={1.4}
+              nodesConnectable={false}
+              elementsSelectable
+              proOptions={{ hideAttribution: true }}
+            >
+              <Background gap={24} size={1.2} color="#d8e1ed" />
+              <MiniMap
+                pannable
+                zoomable
+                nodeColor={(diagramNode) => {
+                  const tone = (diagramNode.data as FlowNodeData).tone;
+                  if (tone === 'admin') return '#7c3aed';
+                  if (tone === 'student') return '#059669';
+                  if (tone === 'teacher') return '#ea580c';
+                  return '#0284c7';
+                }}
+              />
+              <Controls showInteractive={false} />
+            </ReactFlow>
+          </div>
+        </div>
+      </section>
+
+      <section className="legend-section">
+        <div className="legend-card">
+          <h2>Legenda</h2>
+          <div className="legend-grid">
+            <div><span className="legend-shape legend-shape--pill" />Início ou fim</div>
+            <div><span className="legend-shape legend-shape--square" />Processo ou ação</div>
+            <div><span className="legend-shape legend-shape--diamond" />Decisão</div>
+            <div><span className="legend-line" />Direção do fluxo</div>
+          </div>
+        </div>
+
+        <div className="legend-card">
+          <h2>Perfis e responsabilidades</h2>
+          <div className="tone-grid">
+            <span className="tone tone--admin">Administrador</span>
+            <span className="tone tone--system">Sistema</span>
+            <span className="tone tone--student">Aluno</span>
+            <span className="tone tone--teacher">Professor</span>
+          </div>
+        </div>
+      </section>
+    </main>
   );
 }
 
