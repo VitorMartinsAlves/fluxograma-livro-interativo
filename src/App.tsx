@@ -33,6 +33,7 @@ function FlowNode({ data }: NodeProps<DiagramNode>) {
     <div className={`li-node li-node--${data.kind} li-node--${data.tone}`}>
       <Handle type="target" position={Position.Top} id="top" className="li-handle" />
       <Handle type="target" position={Position.Left} id="left" className="li-handle" />
+      <Handle type="target" position={Position.Right} id="right" className="li-handle" />
 
       {decision ? (
         <div className="li-decision-shape">
@@ -50,6 +51,7 @@ function FlowNode({ data }: NodeProps<DiagramNode>) {
 
       <Handle type="source" position={Position.Bottom} id="bottom" className="li-handle" />
       <Handle type="source" position={Position.Right} id="right" className="li-handle" />
+      <Handle type="source" position={Position.Left} id="left" className="li-handle" />
     </div>
   );
 }
