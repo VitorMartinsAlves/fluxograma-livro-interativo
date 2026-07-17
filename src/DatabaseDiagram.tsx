@@ -32,6 +32,13 @@ type TableNodeData = {
 
 type TableNode = Node<TableNodeData, 'tableNode'>;
 
+const groupLabels: Record<TableGroup, string> = {
+  content: 'conteúdo',
+  delivery: 'distribuição',
+  practice: 'prática',
+  processing: 'processamento',
+};
+
 const table = (
   id: string,
   x: number,
@@ -202,7 +209,7 @@ const nodes: TableNode[] = [
 ];
 
 const edges: Edge[] = [
-  relation('r1', 'books', 'files', '1:N', 'top', 'top'),
+  relation('r1', 'books', 'files', '1:N'),
   relation('r2', 'books', 'pages', '1:N', 'bottom', 'top'),
   relation('r3', 'books', 'assignments', '1:N', 'bottom', 'top'),
   relation('r4', 'books', 'segments', '1:N'),
@@ -230,7 +237,7 @@ function TableNodeCard({ data }: NodeProps<TableNode>) {
       <Handle type="target" position={Position.Left} id="left" />
 
       <header>
-        <span>{data.group}</span>
+        <span>{groupLabels[data.group]}</span>
         <strong>{data.name}</strong>
         <small>{data.description}</small>
       </header>
