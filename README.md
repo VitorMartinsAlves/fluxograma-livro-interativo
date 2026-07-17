@@ -28,6 +28,7 @@ leitura → escuta → gravação → transcrição → comparação → feedbac
 
 ## Documentação
 
+- [Cola completa da apresentação](README-APRESENTACAO.md)
 - [Discovery técnico](docs/01-discovery-tecnico.md)
 - [Roteiro para a reunião](docs/02-roteiro-reuniao.md)
 - [Banco de dados MySQL](docs/03-database.sql)
