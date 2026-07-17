@@ -10,6 +10,7 @@ import {
 } from '@xyflow/react';
 import '@xyflow/react/dist/style.css';
 import './revision.css';
+import { DatabaseDiagram } from './DatabaseDiagram';
 import {
   diagramTabs,
   diagrams,
@@ -103,7 +104,7 @@ function App() {
 
             <div className="li-hero-metrics">
               <div><strong>4</strong><span>fluxos por perfil</span></div>
-              <div><strong>11</strong><span>tabelas propostas</span></div>
+              <div><strong>12</strong><span>tabelas propostas</span></div>
               <div><strong>MVP</strong><span>entrega até o fim do mês</span></div>
             </div>
           </div>
@@ -302,7 +303,14 @@ function App() {
             <h2>Banco preparado para conteúdo, prática e progresso.</h2>
             <p>A estrutura separa livro, áudio, gravação, transcrição e resultado para facilitar manutenção e relatórios.</p>
           </div>
-          <div className="li-db-count"><strong>{databaseTables.length}</strong><span>tabelas principais</span></div>
+          <div className="li-db-count"><strong>12</strong><span>tabelas principais</span></div>
+        </div>
+
+        <DatabaseDiagram />
+
+        <div className="li-db-list-heading">
+          <span>Resumo rápido</span>
+          <h3>Responsabilidade de cada tabela</h3>
         </div>
 
         <div className="li-db-grid">
