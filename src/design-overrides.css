@@ -5,3 +5,23 @@
 .li-tech-card h3 {
   color: var(--li-ink);
 }
+
+.li-db-list-heading {
+  margin: 54px 0 22px;
+}
+
+.li-db-list-heading span {
+  display: block;
+  color: #7dd3fc;
+  text-transform: uppercase;
+  letter-spacing: .14em;
+  font-size: .68rem;
+  font-weight: 900;
+}
+
+.li-db-list-heading h3 {
+  margin: 8px 0 0;
+  color: #ffffff;
+  font-size: clamp(1.45rem, 3vw, 2.2rem);
+  letter-spacing: -.035em;
+}
