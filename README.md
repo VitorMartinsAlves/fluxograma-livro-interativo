@@ -23,6 +23,7 @@ leitura → escuta → gravação → transcrição → comparação → feedbac
 - fluxo do professor e coordenação;
 - tecnologias recomendadas;
 - escopo do MVP e da fase 2;
+- diagrama entidade-relacionamento interativo;
 - estrutura revisada do banco;
 - argumentos e perguntas para a reunião.
 
@@ -32,6 +33,7 @@ leitura → escuta → gravação → transcrição → comparação → feedbac
 - [Discovery técnico](docs/01-discovery-tecnico.md)
 - [Roteiro para a reunião](docs/02-roteiro-reuniao.md)
 - [Banco de dados MySQL](docs/03-database.sql)
+- [Modelagem e relações do banco](docs/04-modelagem-banco.md)
 
 ## Tecnologias da apresentação
 
