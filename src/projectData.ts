@@ -64,6 +64,7 @@ export const laterScope = [
 
 export const databaseTables = [
   ['student_books', 'Metadados, status, idioma, nível e publicação.'],
+  ['student_book_files', 'PDF original, imagens, thumbnails e arquivos armazenados.'],
   ['student_book_pages', 'Páginas renderizadas, dimensões e texto extraído.'],
   ['student_book_segments', 'Frases, blocos e posições interativas na página.'],
   ['student_book_segment_audios', 'Áudio de referência, origem TTS/humana e duração.'],
