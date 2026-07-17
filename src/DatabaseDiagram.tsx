@@ -171,7 +171,7 @@ const nodes: TableNode[] = [
   ]),
   table('transcriptions', 1690, 0, 'student_transcriptions', 'Resposta produzida pelo Whisper/STT.', 'practice', [
     { name: 'id', type: 'BIGINT', key: 'PK' },
-    { name: 'attempt_id', type: 'BIGINT', key: 'FK', key: 'UQ' },
+    { name: 'attempt_id (UNIQUE)', type: 'BIGINT', key: 'FK' },
     { name: 'provider', type: 'VARCHAR(100)' },
     { name: 'model_name', type: 'VARCHAR(100)' },
     { name: 'language_code', type: 'VARCHAR(20)', nullable: true },
@@ -202,7 +202,7 @@ const nodes: TableNode[] = [
 ];
 
 const edges: Edge[] = [
-  relation('r1', 'books', 'files', '1:N', 'top', 'bottom'),
+  relation('r1', 'books', 'files', '1:N', 'top', 'top'),
   relation('r2', 'books', 'pages', '1:N', 'bottom', 'top'),
   relation('r3', 'books', 'assignments', '1:N', 'bottom', 'top'),
   relation('r4', 'books', 'segments', '1:N'),
